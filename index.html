@@ -52,7 +52,6 @@
             font-family: 'Inter', sans-serif;
             background-color: var(--background-dark);
             color: var(--text-primary);
-            transition: background-color 0.5s ease;
         }
 
         .bg-klar { background-color: var(--klar-primary); }
@@ -109,6 +108,28 @@
         
         #back-to-top {
             transition: opacity 0.3s, transform 0.3s;
+        }
+        
+        /* Aurora Background Styles */
+        .aurora-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .aurora-spot {
+            position: absolute;
+            width: 800px;
+            height: 800px;
+            background-image: radial-gradient(circle, rgba(85, 134, 214, 0.1) 0%, transparent 60%);
+            border-radius: 50%;
+            filter: blur(100px);
+            will-change: transform;
+            pointer-events: none;
+            transition: transform 0.5s ease-out;
         }
         
         /* Preloader Styles */
@@ -289,6 +310,31 @@
         };
 
         // --- Components ---
+        const AuroraBackground = () => {
+            const spot1 = useRef(null);
+            const spot2 = useRef(null);
+            const spot3 = useRef(null);
+
+            useEffect(() => {
+                const handleScroll = () => {
+                    const scrollY = window.scrollY;
+                    if (spot1.current) spot1.current.style.transform = `translateY(${scrollY * 0.3}px)`;
+                    if (spot2.current) spot2.current.style.transform = `translateY(${scrollY * 0.5}px)`;
+                    if (spot3.current) spot3.current.style.transform = `translateY(${scrollY * 0.7}px)`;
+                };
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+            
+            return (
+                <div className="aurora-background">
+                    <div ref={spot1} className="aurora-spot" style={{ top: '-50%', left: '-50%' }}></div>
+                    <div ref={spot2} className="aurora-spot" style={{ top: '0%', right: '-50%' }}></div>
+                    <div ref={spot3} className="aurora-spot" style={{ bottom: '-50%', left: '25%' }}></div>
+                </div>
+            );
+        };
+        
         const Modal = ({ children, onClose, animationClasses }) => {
             const [isAnimating, setIsAnimating] = useState(false);
 
@@ -443,22 +489,6 @@
                 if(headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
             }, []);
 
-            useEffect(() => {
-                const body = document.body;
-                const handleScroll = () => {
-                    const scrollY = window.scrollY;
-                    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-                    const scrollPercent = Math.min(scrollY / (docHeight * 0.75), 1);
-                    const r = Math.floor(18 + (44 - 18) * scrollPercent);
-                    const g = Math.floor(18 + (74 - 18) * scrollPercent);
-                    const b = Math.floor(18 + (138 - 18) * scrollPercent);
-                    body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
-                };
-                window.addEventListener('scroll', handleScroll);
-                return () => window.removeEventListener('scroll', handleScroll);
-            }, []);
-
-
             const [usersRef, usersCount] = useAnimatedCounter(80);
             const [updatesRef, updatesCount] = useAnimatedCounter(20);
             const [uptimeRef, uptimeCount] = useAnimatedCounter(99);
@@ -499,7 +529,7 @@
             
             return (
                 <div className="relative">
-                    <div className="aurora-background"></div>
+                    <AuroraBackground />
                     <div className="relative z-10">
                         <Header 
                             headerRef={headerRef}
