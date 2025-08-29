@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klar Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React Libraries -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        
+        :root {
+            --klar-primary: #5586D6;
+            --klar-darker: #2c4a8a;
+            --klar-light: #73a1e8;
+            --background-dark: #121212;
+            --background-light: #1E1E1E;
+            --text-primary: #EAEAEA;
+            --text-secondary: #A0A0A0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-dark);
+            color: var(--text-primary);
+        }
+
+        .bg-klar { background-color: var(--klar-primary); }
+        .hover\:bg-klar-light:hover { background-color: var(--klar-light); }
+        .text-klar { color: var(--klar-primary); }
+        .border-klar { border-color: var(--klar-primary); }
+        .shadow-klar { box-shadow: 0 4px 14px 0 rgba(85, 134, 214, 0.3); }
+
+        .interactive-card {
+            position: relative;
+            transition: transform 0.2s ease, box-shadow 0.3s ease;
+            transform-style: preserve-3d;
+        }
+        .interactive-card:hover {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .interactive-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 0.5rem;
+            border: 1px solid transparent;
+            background: radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgba(85, 134, 214, 0.15), transparent 40%) border-box;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .interactive-card:hover::before {
+            opacity: 1;
+        }
+
+        .faq-item {
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+        .faq-item:hover {
+            transform: scale(1.02);
+            border-color: var(--klar-primary);
+        }
+
+        .fade-in-section {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .fade-in-section.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .nav-active {
+            color: var(--klar-primary) !important;
+            font-weight: 700;
+        }
+        
+        #back-to-top {
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        
+        /* Aurora Background Animation */
+        .hero-aurora {
+            background: radial-gradient(ellipse at top left, var(--klar-darker) 0%, var(--background-dark) 60%);
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-aurora::before, .hero-aurora::after {
+            content: '';
+            position: absolute;
+            width: 800px;
+            height: 800px;
+            background-image: radial-gradient(circle, rgba(85, 134, 214, 0.15) 0%, transparent 60%);
+            border-radius: 50%;
+            filter: blur(100px);
+            will-change: transform;
+            pointer-events: none;
+        }
+        .hero-aurora::before {
+            top: -20%;
+            left: -20%;
+            animation: aurora-one 20s infinite alternate ease-in-out;
+        }
+        .hero-aurora::after {
+            bottom: -20%;
+            right: -20%;
+            animation: aurora-two 25s infinite alternate ease-in-out;
+        }
+        @keyframes aurora-one {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(100px, 50px) scale(1.2); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+        @keyframes aurora-two {
+            0% { transform: translate(0, 0) scale(1.2); }
+            50% { transform: translate(-100px, -50px) scale(1); }
+            100% { transform: translate(0, 0) scale(1.2); }
+        }
+        
+        /* Preloader Styles */
+        #preloader {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--background-dark);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+        #preloader.loaded {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.2);
+            border-top-color: var(--klar-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+    </style>
+</head>
+<body class="antialiased">
+    <div id="preloader">
+        <div class="spinner"></div>
+    </div>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Helper Hooks ---
+        const useInteractiveCard = () => {
+            useEffect(() => {
+                const cards = document.querySelectorAll('.interactive-card');
+                const handleMouseMove = (e) => {
+                    const card = e.currentTarget;
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const rotateX = (y - rect.height / 2) / 15;
+                    const rotateY = (rect.width / 2 - x) / 15;
+                    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                    card.style.setProperty('--mouse-x', `${x}px`);
+                    card.style.setProperty('--mouse-y', `${y}px`);
+                };
+                const handleMouseLeave = (e) => {
+                    e.currentTarget.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
+                };
+                cards.forEach(card => {
+                    card.addEventListener('mousemove', handleMouseMove);
+                    card.addEventListener('mouseleave', handleMouseLeave);
+                });
+                return () => {
+                    cards.forEach(card => {
+                        card.removeEventListener('mousemove', handleMouseMove);
+                        card.removeEventListener('mouseleave', handleMouseLeave);
+                    });
+                };
+            }, []);
+        };
+        
+        const useFadeInSection = () => {
+             useEffect(() => {
+                const sections = document.querySelectorAll('.fade-in-section');
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) entry.target.classList.add('is-visible');
+                    });
+                }, { threshold: 0.1 });
+                sections.forEach(section => observer.observe(section));
+                return () => observer.disconnect();
+            }, []);
+        };
+
+        const useAnimatedCounter = (target, duration = 2000) => {
+            const [count, setCount] = useState(0);
+            const ref = useRef(null);
+
+            useEffect(() => {
+                const observer = new IntersectionObserver(([entry]) => {
+                    if (entry.isIntersecting) {
+                        let start = 0;
+                        const end = target;
+                        const startTime = Date.now();
+                        
+                        const animate = () => {
+                            const currentTime = Date.now();
+                            const progress = Math.min((currentTime - startTime) / duration, 1);
+                            const currentNum = Math.floor(progress * end);
+                            setCount(currentNum);
+                            if (progress < 1) requestAnimationFrame(animate);
+                        };
+                        animate();
+                        observer.unobserve(ref.current);
+                    }
+                }, { threshold: 0.5 });
+
+                if (ref.current) observer.observe(ref.current);
+                return () => {
+                    if (observer && ref.current) observer.unobserve(ref.current);
+                }
+            }, [target, duration]);
+
+            return [ref, count];
+        };
+        
+        const useActiveNav = (headerHeight) => {
+            const [activeSection, setActiveSection] = useState('home');
+            useEffect(() => {
+                const sections = Array.from(document.querySelectorAll('main section[id]'));
+                const handleScroll = () => {
+                    // This value determines the "trigger line" for the active section.
+                    // It's set to be about 1/3 of the way down the screen for a more natural feel.
+                    const scrollPosition = window.scrollY + window.innerHeight / 3; 
+                    
+                    const currentSection = sections
+                        .map(section => ({
+                            id: section.id,
+                            offsetTop: section.offsetTop
+                        }))
+                        .filter(section => section.offsetTop <= scrollPosition)
+                        .pop();
+
+                    setActiveSection(currentSection ? currentSection.id : 'home');
+                };
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, [headerHeight]);
+            return activeSection;
+        };
+
+        // --- Components ---
+        const VideoModal = ({ videoUrl, onClose }) => {
+            useEffect(() => {
+                const handleEsc = e => e.key === 'Escape' && onClose();
+                document.addEventListener('keydown', handleEsc);
+                return () => document.removeEventListener('keydown', handleEsc);
+            }, [onClose]);
+
+            return (
+                <div onClick={onClose} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div onClick={e => e.stopPropagation()} className="bg-background-light rounded-lg shadow-2xl w-full max-w-4xl relative">
+                        <button onClick={onClose} className="absolute -top-3 -right-3 w-10 h-10 bg-klar rounded-full text-white flex items-center justify-center text-2xl font-bold">&times;</button>
+                        <div className="aspect-video">
+                            <iframe className="w-full h-full rounded-lg" src={videoUrl} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [isModalOpen, setIsModalOpen] = useState(false);
+            const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+            const [activeFaq, setActiveFaq] = useState(null);
+            
+            useEffect(() => {
+                const preloader = document.getElementById('preloader');
+                setTimeout(() => {
+                    preloader.classList.add('loaded');
+                }, 1000);
+            }, []);
+
+            useFadeInSection();
+            useInteractiveCard();
+
+            const headerRef = useRef(null);
+            const [headerHeight, setHeaderHeight] = useState(80);
+            const activeSection = useActiveNav(headerHeight);
+            
+            useEffect(() => {
+                if(headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
+            }, []);
+
+            const [usersRef, usersCount] = useAnimatedCounter(80);
+            const [updatesRef, updatesCount] = useAnimatedCounter(20);
+            const [uptimeRef, uptimeCount] = useAnimatedCounter(99);
+
+            const handleScrollTo = (id) => {
+                 const element = document.getElementById(id);
+                 if (element) {
+                    const offsetPosition = element.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+                    window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+                 }
+                 setIsMobileMenuOpen(false);
+            };
+
+            const pricingTiers = [
+                { name: '1 Week Klar Access', price: '$1.50', url: 'https://klarhub.sellhub.cx/product/1-Week/' },
+                { name: '1 Month Klar Access', price: '$2.50', url: 'https://klarhub.sellhub.cx/product/1-Month-Klar-Access/' },
+                { name: '3 Month Klar Access', price: '$3.75', url: 'https://klarhub.sellhub.cx/product/3-Month-Access/' },
+                { name: '6 Month Klar Access', price: '$5.50', url: 'https://klarhub.sellhub.cx/product/6-Month-Klar-Access/' },
+                { name: 'Lifetime Klar', price: '$15.00', url: 'https://klarhub.sellhub.cx/product/New-product/' },
+                { name: 'Extreme Alt Gen', price: '$1.00', url: 'https://klarhub.sellhub.cx/product/Extreme-Alt-Gen/' }
+            ];
+
+             const testimonials = [
+                { name: 'Customer', stars: 5, text: "easiest checkout", date: "Wed Jul 23 2025" },
+                { name: 'Customer', stars: 5, text: "Amazing and easy", date: "Wed Jul 16 2025" },
+                { name: 'Customer', stars: 5, text: "best script out there cop now", date: "Fri Jun 06 2025" }
+            ];
+
+             const faqs = [
+                { q: "Is Klar Hub a one-time purchase?", a: "We offer both subscription and lifetime access plans. You can choose the one that best suits your needs." },
+                { q: "What payment methods are accepted?", a: "We accept all major payment methods through our secure online storefront, including credit cards, PayPal, and more." },
+                { q: "What executors are compatible?", a: "Our scripts are designed to be compatible with all major, high-quality executors on the market." },
+                { q: "How often are the scripts updated?", a: "We update our scripts regularly to ensure compatibility with the latest Roblox updates and to add new features. Updates are always free for active subscribers or lifetime members." }
+            ];
+
+            const features = [
+                { title: "Perfect Kicking & Throwing", description: "Achieve perfect accuracy and power on every kick and throw with our advanced precision assistance.", icon: "M15.59 14.37a6 6 0 01-5.84 7.38v-4.82m5.84-2.56v4.82a6 6 0 01-1.292 3.536l-1.992-1.992a4.5 4.5 0 00-6.364-6.364l-1.992-1.992A6 6 0 0115.59 14.37z" },
+                { title: "QB Aimbot", description: "Never miss a throw with our precise quarterback aimbot, featuring prediction and sensitivity controls.", icon: "M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" },
+                { title: "Ball Magnets", description: "Automatically catch passes with our intelligent ball magnet, ensuring you never drop the ball.", icon: "M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zm-7.518-.267A8.25 8.25 0 1120.25 10.5M8.288 14.212A5.25 5.25 0 1117.25 10.5" }
+            ];
+            
+            return (
+                <div className="min-h-screen">
+                    <Header 
+                        headerRef={headerRef}
+                        onScrollTo={handleScrollTo} 
+                        onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        activeSection={activeSection}
+                    />
+                     <MobileMenu 
+                        isOpen={isMobileMenuOpen}
+                        onScrollTo={handleScrollTo}
+                    />
+                    <main>
+                        <section id="home" className="min-h-screen flex flex-col items-center justify-center text-center p-8 relative hero-aurora -mt-20">
+                            <div className="relative z-10">
+                                <h2 className="text-6xl font-extrabold text-white">Welcome to <span className="text-klar">Klar Hub</span></h2>
+                                <p className="text-xl text-gray-400 mt-4 max-w-2xl">The pinnacle of script performance and reliability for FF2.</p>
+                                <div className="mt-8 flex items-center justify-center gap-4">
+                                    <button onClick={() => handleScrollTo('pricing')} className="py-3 px-8 rounded-lg font-semibold text-center transition bg-klar hover:bg-klar-light text-white shadow-lg shadow-klar flex items-center gap-2">
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25v-6h9M6.08 5.746l.473 2.365A1.125 1.125 0 015.454 9H2.25M9 11.25v3.375c0 .621.504 1.125 1.125 1.125h2.25c.621 0 1.125-.504 1.125-1.125V11.25m-3.375 0h3.375M7.5 14.25h3.375z"/></svg>
+                                        Purchase Now
+                                    </button>
+                                    <button onClick={() => setIsModalOpen(true)} className="py-3 px-8 rounded-lg font-semibold text-center transition bg-transparent border border-gray-600 hover:bg-gray-800 text-gray-300 flex items-center gap-2">
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M2 10a8 8 0 1116 0 8 8 0 01-16 0zm6.39-2.908a.75.75 0 01.766.027l3.5 2.25a.75.75 0 010 1.262l-3.5 2.25A.75.75 0 018 12.25v-4.5a.75.75 0 01.39-.658z" clipRule="evenodd" /></svg>
+                                        Watch Demo
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+
+                        <div className="w-full max-w-6xl mx-auto px-4 space-y-24 relative z-10">
+                             <section id="stats" className="py-12 fade-in-section">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                                    <div ref={usersRef}>
+                                        <p className="text-5xl font-extrabold text-klar">{usersCount.toLocaleString()}+</p>
+                                        <p className="text-lg text-gray-400 mt-2">Active Users</p>
+                                    </div>
+                                    <div ref={updatesRef}>
+                                        <p className="text-5xl font-extrabold text-klar">{updatesCount}+</p>
+                                        <p className="text-lg text-gray-400 mt-2">Monthly Updates</p>
+                                    </div>
+                                    <div ref={uptimeRef}>
+                                        <p className="text-5xl font-extrabold text-klar">{uptimeCount}%</p>
+                                        <p className="text-lg text-gray-400 mt-2">Guaranteed Uptime</p>
+                                    </div>
+                                </div>
+                            </section>
+                            
+                            <section id="features" className="py-12 text-center fade-in-section">
+                                <h3 className="text-4xl font-bold text-white">Core Features</h3>
+                                <div className="mt-12 grid md:grid-cols-3 gap-8">
+                                    {features.map(f => (
+                                         <div key={f.title} className="bg-black/30 p-6 rounded-lg border border-gray-800 text-left interactive-card">
+                                            <svg className="w-8 h-8 text-klar mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d={f.icon} /></svg>
+                                            <h4 className="text-xl font-semibold text-white">{f.title}</h4>
+                                            <p className="text-gray-400 mt-2">{f.description}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+
+                            <section id="pricing" className="py-12 text-center fade-in-section">
+                                <h3 className="text-4xl font-bold text-white">Choose Your Access</h3>
+                                <div className="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    {pricingTiers.map(tier => (
+                                        <div key={tier.name} className="bg-black/30 p-6 rounded-lg border border-gray-800 text-center interactive-card">
+                                            <h4 className="text-xl font-bold text-white mb-2">{tier.name}</h4>
+                                            <p className="text-gray-400 text-sm mb-4">Starting at</p>
+                                            <p className="text-4xl font-extrabold text-klar mb-6">{tier.price}</p>
+                                            <a href={tier.url} target="_blank" rel="noopener noreferrer" className="inline-block w-full py-2 px-6 rounded-lg font-semibold text-center transition bg-klar/20 hover:bg-klar/30 text-klar border border-klar">Purchase</a>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+
+                             <section id="reviews" className="py-12 text-center fade-in-section">
+                                <h3 className="text-4xl font-bold text-white">Trusted by Players Worldwide</h3>
+                                <div className="mt-12 grid md:grid-cols-3 gap-8">
+                                     {testimonials.map((t, i) => (
+                                        <div key={i} className="bg-black/30 p-6 rounded-lg border border-gray-800 text-left interactive-card flex flex-col h-full">
+                                            <div className="flex-grow"><p className="text-gray-300 italic text-lg">"{t.text}"</p></div>
+                                            <div className="mt-4 pt-4 border-t border-gray-700">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-klar font-semibold">{t.name}</span>
+                                                    <div className="flex">
+                                                        {Array(t.stars).fill(0).map((_, i) => <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>)}
+                                                    </div>
+                                                </div>
+                                                <p className="text-gray-500 text-sm mt-1">{t.date}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+
+                            <section id="faq" className="py-12 max-w-3xl mx-auto fade-in-section">
+                                <h3 className="text-4xl font-bold text-white text-center">Frequently Asked Questions</h3>
+                                <div className="mt-12 space-y-4">
+                                    {faqs.map((faq, index) => (
+                                        <div key={index} className="bg-black/30 border border-gray-800 rounded-lg faq-item">
+                                            <button onClick={() => setActiveFaq(activeFaq === index ? null : index)} className="w-full flex justify-between items-center p-6 text-left">
+                                                <span className="text-lg font-semibold text-white">{faq.q}</span>
+                                                <svg className={`w-6 h-6 text-gray-400 transition-transform duration-300 ${activeFaq === index ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                            </button>
+                                            <div className="grid transition-all duration-500 ease-in-out" style={{gridTemplateRows: activeFaq === index ? '1fr' : '0fr'}}>
+                                                <div className="overflow-hidden"><p className="p-6 pt-0 text-gray-400">{faq.a}</p></div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+
+                            <section id="tos" className="py-12 max-w-4xl mx-auto fade-in-section">
+                                <h3 className="text-4xl font-bold text-white text-center">Terms & Conditions</h3>
+                                <div className="mt-12 bg-black/30 border border-gray-800 rounded-lg p-8 space-y-6 text-gray-300">
+                                    <p><strong className="text-white">Buyer Rule 1:</strong> Klar Hub does not accept refunds if you purchase a script.</p>
+                                    <p><strong className="text-white">Buyer Rule 2:</strong> Script sharing is not prohibited in Klar. However, if you are caught doing so, you will be blacklisted from using your script. (No refunds will be issued in this case.)</p>
+                                    <p><strong className="text-white">Buyer Rule 3:</strong> Attempting to crack into our source or any other protected material will result in a lawsuit being sent to you. At Klar, we take our source very seriously. (This rule is also a regulatory rule.)</p>
+                                </div>
+                            </section>
+
+                            <section id="community" className="py-12 text-center fade-in-section">
+                                <div className="bg-black/30 border border-gray-800 rounded-2xl p-8">
+                                    <h3 className="text-4xl font-bold text-white">Still Have Questions?</h3>
+                                    <p className="text-lg text-gray-400 mt-4">Get support and connect with other users on our Discord server.</p>
+                                    <div className="mt-8 max-w-xs mx-auto">
+                                        <a href="https://discord.gg/bGmGSnW3gQ" target="_blank" rel="noopener noreferrer" className="block py-3 px-8 rounded-lg font-semibold text-center transition bg-klar hover:bg-klar-light text-white">Join our Community</a>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </main>
+                    <Footer />
+                    {isModalOpen && <VideoModal videoUrl="https://www.youtube.com/embed/d2hR2gRhME0?autoplay=1" onClose={() => setIsModalOpen(false)} />}
+                    <BackToTopButton />
+                </div>
+            );
+        };
+
+        const Header = ({ headerRef, onScrollTo, onToggleMobileMenu, activeSection }) => {
+            const discordLink = "https://discord.gg/bGmGSnW3gQ";
+            const navItems = [
+                { id: 'features', label: 'Features' },
+                { id: 'pricing', label: 'Pricing' },
+                { id: 'reviews', label: 'Reviews' },
+                { id: 'faq', label: 'FAQ' },
+                { id: 'tos', label: 'Terms' }
+            ];
+            return (
+                 <header ref={headerRef} className="sticky top-0 z-40 p-4 flex justify-between items-center bg-black/50 backdrop-blur-sm">
+                    <h1 className="text-2xl font-bold flex-1 cursor-pointer" onClick={() => onScrollTo('home')}>
+                        <span className="text-klar">Klar</span> Hub
+                    </h1>
+                    <nav className="hidden md:flex flex-1 justify-center items-center gap-6 text-sm font-semibold">
+                        {navItems.map(item => (
+                            <button key={item.id} onClick={() => onScrollTo(item.id)} className={`text-gray-300 hover:text-klar transition ${activeSection === item.id ? 'nav-active' : ''}`}>
+                                {item.label}
+                            </button>
+                        ))}
+                    </nav>
+                    <div className="flex-1 hidden md:flex justify-end">
+                         <a href={discordLink} target="_blank" rel="noopener noreferrer" className="inline-block py-2 px-6 rounded-lg font-semibold text-center transition bg-klar/20 hover:bg-klar/30 text-klar border border-klar">Join Discord</a>
+                    </div>
+                    <div className="md:hidden flex-1 flex justify-end">
+                        <button onClick={onToggleMobileMenu} className="text-white"><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" /></svg></button>
+                    </div>
+                </header>
+            );
+        };
+        
+        const MobileMenu = ({ isOpen, onScrollTo }) => {
+            if (!isOpen) return null;
+            const discordLink = "https://discord.gg/bGmGSnW3gQ";
+            return (
+                <div className="fixed inset-0 z-50 bg-background-dark/95 backdrop-blur-lg flex flex-col items-center justify-center gap-8 text-2xl font-bold">
+                     <button onClick={() => onScrollTo(null)} className="absolute top-5 right-5 text-white text-4xl">&times;</button>
+                     <button onClick={() => onScrollTo('features')} className="text-gray-300 hover:text-klar transition">Features</button>
+                     <button onClick={() => onScrollTo('pricing')} className="text-gray-300 hover:text-klar transition">Pricing</button>
+                     <button onClick={() => onScrollTo('reviews')} className="text-gray-300 hover:text-klar transition">Reviews</button>
+                     <button onClick={() => onScrollTo('faq')} className="text-gray-300 hover:text-klar transition">FAQ</button>
+                     <button onClick={() => onScrollTo('tos')} className="text-gray-300 hover:text-klar transition">Terms</button>
+                     <div className="mt-4"><a href={discordLink} target="_blank" rel="noopener noreferrer" className="inline-block py-3 px-8 text-xl rounded-lg font-semibold text-center transition bg-klar hover:bg-klar-light text-white">Join Discord</a></div>
+                </div>
+            );
+        };
+        
+        const BackToTopButton = () => {
+            const [isVisible, setIsVisible] = useState(false);
+            useEffect(() => {
+                const toggleVisibility = () => {
+                    if (window.scrollY > 300) setIsVisible(true);
+                    else setIsVisible(false);
+                };
+                window.addEventListener('scroll', toggleVisibility);
+                return () => window.removeEventListener('scroll', toggleVisibility);
+            }, []);
+
+            return (
+                <button id="back-to-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`fixed bottom-8 right-8 bg-klar/80 hover:bg-klar text-white w-12 h-12 rounded-full flex items-center justify-center pointer-events-auto ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"/></svg>
+                </button>
+            );
+        };
+
+
+        const Footer = () => (
+             <footer className="w-full p-8 text-center text-gray-500">
+                <p>&copy; 2025 Klar Hub. All rights reserved.</p>
+            </footer>
+        );
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
