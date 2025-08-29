@@ -322,60 +322,27 @@
 
             const callGeminiAPI = async (prompt) => {
                 setIsLoading(true);
-                const apiKey = "";
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-
-                 const systemPrompt = `You are a friendly and helpful support and billing assistant for Klar Hub. Your purpose is to answer user questions about the scripts. 
-                **Formatting Rules:**
-                - Your answers must be concise and to the point.
-                - When listing multiple items (like features or prices), YOU MUST use bullet points.
-                - Use bold text for key terms like feature names or prices to make them stand out.
-                
-                **Product Information:**
-                - Product Name: Klar Hub
-                - Game: Football Fusion 2 (FF2)
-                - Main Features: Perfect Kicking & Throwing, QB Aimbot, Ball Magnets.
-                - The product is paid and 100% undetected.
-                
-                **Billing & Pricing Information:**
-                - 1 Week Access: $1.50
-                - 1 Month Access: $2.50
-                - 3 Month Access: $3.75
-                - 6 Month Access: $5.50
-                - Lifetime Access: $15.00
-                - Extreme Alt Gen: $1.00
-                
-                When asked about prices, provide the relevant price clearly. Do not make up features. If you don't know an answer, politely say you don't have that information.`;
+                const apiUrl = '/api/gemini';
 
                 try {
                     const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            systemInstruction: { parts: [{ text: systemPrompt }] },
-                            contents: [{ parts: [{ text: prompt }] }],
-                        })
+                        body: JSON.stringify({ prompt: prompt })
                     });
 
                     if (!response.ok) {
-                         if(response.status === 400){
-                            throw new Error("Maintenance");
-                         }
-                         throw new Error(`API error: ${response.statusText}`);
+                         throw new Error("Maintenance");
                     }
                     const result = await response.json();
-                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    const text = result.text;
                     if (text) {
                         setChatHistory(prev => [...prev, { role: 'ai', text }]);
                     } else {
                          throw new Error("Maintenance");
                     }
                 } catch (err) {
-                     if (err.message === "Maintenance"){
-                         setChatHistory(prev => [...prev, { role: 'ai', text: 'Sorry, the AI assistant is currently offline for maintenance. Please check back later.' }]);
-                     } else {
-                        setChatHistory(prev => [...prev, { role: 'ai', text: 'Sorry, I am having trouble connecting. Please try again later.' }]);
-                     }
+                     setChatHistory(prev => [...prev, { role: 'ai', text: 'Sorry, the AI assistant is currently offline for maintenance. Please check back later.' }]);
                 } finally {
                     setIsLoading(false);
                 }
@@ -406,7 +373,7 @@
                             {chatHistory.map((msg, index) => (
                                 <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`max-w-xs md:max-w-md p-3 rounded-lg ${msg.role === 'user' ? 'bg-klar text-white' : 'bg-gray-700 text-gray-200'}`}>
-                                        <p dangerouslySetInnerHTML={{ __html: msg.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\* (.*?)\n/g, '<li>$1</li>').replace(/<li>/g, '<li class="list-disc ml-4">') }}></p>
+                                        <p dangerouslySetInnerHTML={{ __html: msg.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\* (.*?)(?:\n|$)/g, '<li>$1</li>').replace(/<li>/g, '<li class="list-disc ml-4">') }}></p>
                                     </div>
                                 </div>
                             ))}
