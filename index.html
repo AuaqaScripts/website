@@ -48,18 +48,10 @@
             scroll-behavior: smooth;
         }
 
-        @keyframes animated-gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
         body {
             font-family: 'Inter', sans-serif;
+            background-color: var(--background-dark);
             color: var(--text-primary);
-            background: linear-gradient(-45deg, var(--background-dark), var(--background-light), var(--klar-darker), var(--background-dark));
-            background-size: 400% 400%;
-            animation: animated-gradient 20s ease infinite;
         }
 
         .bg-klar { background-color: var(--klar-primary); }
@@ -116,6 +108,34 @@
         
         #back-to-top {
             transition: opacity 0.3s, transform 0.3s;
+        }
+        
+        @keyframes float {
+            0% { transform: translate(0px, 0px) scale(1); }
+            50% { transform: translate(20px, 30px) scale(1.1); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+
+        /* Aurora Background Styles */
+        .aurora-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .aurora-spot {
+            position: absolute;
+            background-image: radial-gradient(circle, rgba(85, 134, 214, 0.15) 0%, transparent 60%);
+            border-radius: 50%;
+            filter: blur(100px);
+            will-change: transform;
+            pointer-events: none;
+            animation-name: float;
+            animation-timing-function: ease-in-out;
+            animation-iteration-count: infinite;
         }
         
         /* Preloader Styles */
@@ -295,6 +315,42 @@
         };
 
         // --- Components ---
+        const AuroraBackground = () => {
+            const [spots, setSpots] = useState([]);
+
+            useEffect(() => {
+                // Generate a set of random spots for the background
+                const generatedSpots = Array.from({ length: 15 }).map((_, i) => ({
+                    id: i,
+                    top: `${Math.random() * 100}%`,
+                    left: `${Math.random() * 100}%`,
+                    size: `${Math.floor(Math.random() * 300 + 200)}px`, // Random size between 200px and 500px
+                    animationDuration: `${Math.floor(Math.random() * 20 + 20)}s`, // Random duration between 20s and 40s
+                    animationDelay: `${Math.random() * -20}s`, // Start animations at different times
+                }));
+                setSpots(generatedSpots);
+            }, []);
+            
+            return (
+                <div className="aurora-background">
+                    {spots.map(spot => (
+                        <div 
+                            key={spot.id} 
+                            className="aurora-spot" 
+                            style={{ 
+                                top: spot.top, 
+                                left: spot.left,
+                                width: spot.size,
+                                height: spot.size,
+                                animationDuration: spot.animationDuration,
+                                animationDelay: spot.animationDelay,
+                            }}
+                        ></div>
+                    ))}
+                </div>
+            );
+        };
+
         const Modal = ({ children, onClose, animationClasses }) => {
             const [isAnimating, setIsAnimating] = useState(false);
 
@@ -374,43 +430,32 @@ When asked about pricing, use the information above. Do not invent other prices 
                     systemInstruction: { parts: [{ text: systemPrompt }] },
                 };
 
-                let attempt = 0;
-                const maxAttempts = 3;
-                while (attempt < maxAttempts) {
-                    try {
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload),
-                        });
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
 
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-
-                        const result = await response.json();
-                        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                        if (text) {
-                            setChatHistory(prev => [...prev, { role: 'ai', text }]);
-                        } else {
-                            throw new Error("Invalid response from AI.");
-                        }
-                        return; // Exit loop on success
-                    } catch (err) {
-                        console.error(`API call attempt ${attempt + 1} failed:`, err);
-                        attempt++;
-                        if (attempt >= maxAttempts) {
-                            setChatHistory(prev => [...prev, { role: 'ai', text: 'Sorry, the AI assistant is currently experiencing issues. Please try again later or join our Discord for help.' }]);
-                        } else {
-                            // Exponential backoff
-                            await new Promise(res => setTimeout(res, 1000 * Math.pow(2, attempt)));
-                        }
-                    } finally {
-                         if (attempt >= maxAttempts || attempt === 0) setIsLoading(false); // Only set loading to false on final failure or first success
+                    if (!response.ok) {
+                        console.error("API Error Details:", response.status, await response.text());
+                        throw new Error(`HTTP error! status: ${response.status}`);
                     }
+
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                    if (text) {
+                        setChatHistory(prev => [...prev, { role: 'ai', text }]);
+                    } else {
+                        throw new Error("Invalid response from AI.");
+                    }
+                } catch (err) {
+                    console.error("Failed to call Gemini API:", err);
+                    setChatHistory(prev => [...prev, { role: 'ai', text: 'Sorry, the AI assistant is currently experiencing issues. Please try again later or join our Discord for help.' }]);
+                } finally {
+                    setIsLoading(false);
                 }
-                 setIsLoading(false);
             };
 
             const sendMessage = (prompt) => {
@@ -545,6 +590,7 @@ When asked about pricing, use the information above. Do not invent other prices 
             
             return (
                 <div className="relative">
+                    <AuroraBackground />
                     <div className="relative z-10">
                         <Header 
                             headerRef={headerRef}
@@ -812,4 +858,5 @@ When asked about pricing, use the information above. Do not invent other prices 
     </script>
 </body>
 </html>
+
 
