@@ -181,12 +181,12 @@
         
         /* Modal Animation */
         .modal-enter-active {
-          opacity: 1;
-          transition: opacity 300ms;
+            opacity: 1;
+            transition: opacity 300ms;
         }
         .modal-exit-active {
-          opacity: 0;
-          transition: opacity 300ms;
+            opacity: 0;
+            transition: opacity 300ms;
         }
         .modal-content-enter-active {
             opacity: 1;
@@ -198,7 +198,6 @@
             transform: scale(0.95);
             transition: opacity 300ms, transform 300ms;
         }
-
     </style>
 </head>
 <body class="antialiased">
@@ -354,12 +353,32 @@
                 <div onClick={handleClose} className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 ${isAnimating ? 'opacity-100' : 'opacity-0'}`}>
                      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
                      <div onClick={e => e.stopPropagation()} className={`relative transition-all duration-300 ${isAnimating ? animationClasses.enterActive : animationClasses.exitActive}`}>
-                        {children(handleClose)}
+                         {children(handleClose)}
                      </div>
                 </div>
             )
         };
         
+        const VideoModal = ({ videoUrl, onClose }) => {
+            return (
+                <Modal onClose={onClose} animationClasses={{enterActive: 'opacity-100 scale-100', exitActive: 'opacity-0 scale-95'}}>
+                    {(handleClose) => (
+                        <div className="bg-background-light rounded-lg shadow-2xl w-full max-w-4xl aspect-video relative border border-klar/50">
+                            <button onClick={handleClose} className="absolute -top-4 -right-4 z-10 bg-white text-black rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg">&times;</button>
+                            <iframe 
+                                className="w-full h-full rounded-lg"
+                                src={videoUrl}
+                                title="Klar Hub Demo Video"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                            ></iframe>
+                        </div>
+                    )}
+                </Modal>
+            );
+        };
+
         const AIHelperModal = ({ onClose }) => {
             const [input, setInput] = useState('');
             const [chatHistory, setChatHistory] = useState([
@@ -372,29 +391,65 @@
                 chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
             }, [chatHistory]);
             
-            const callGeminiAPI = async (prompt) => {
+            const callGeminiAPI = async (userQuery) => {
                 setIsLoading(true);
-                const apiUrl = '/api/gemini';
+                const apiKey = ""; // API key is handled by the environment.
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ prompt: prompt })
-                    });
-                    if (!response.ok) throw new Error("Maintenance");
-                    const result = await response.json();
-                    const text = result.text;
-                    if (text) {
-                        setChatHistory(prev => [...prev, { role: 'ai', text }]);
-                    } else {
-                        throw new Error("Maintenance");
+                const systemPrompt = `You are a friendly and helpful AI assistant for Klar Hub, a website that sells scripts for the Roblox game Football Fusion 2. Your goal is to answer user questions about Klar Hub's features, pricing, safety, and community. Be concise and informative. Use markdown for formatting like bolding and lists.
+
+**Pricing Information:**
+* 1 Week Access: $1.50
+* 1 Month Access: $2.50
+* 3 Month Access: $3.75
+* 6 Month Access: $5.50
+* Lifetime Access: $15.00
+* Extreme Alt Gen: $1.00
+
+When asked about pricing, use the information above. Do not invent other prices or plans.`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                };
+
+                let attempt = 0;
+                const maxAttempts = 3;
+                while (attempt < maxAttempts) {
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload),
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+
+                        const result = await response.json();
+                        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                        if (text) {
+                            setChatHistory(prev => [...prev, { role: 'ai', text }]);
+                        } else {
+                            throw new Error("Invalid response from AI.");
+                        }
+                        return; // Exit loop on success
+                    } catch (err) {
+                        console.error(`API call attempt ${attempt + 1} failed:`, err);
+                        attempt++;
+                        if (attempt >= maxAttempts) {
+                            setChatHistory(prev => [...prev, { role: 'ai', text: 'Sorry, the AI assistant is currently experiencing issues. Please try again later or join our Discord for help.' }]);
+                        } else {
+                            // Exponential backoff
+                            await new Promise(res => setTimeout(res, 1000 * Math.pow(2, attempt)));
+                        }
+                    } finally {
+                         if (attempt >= maxAttempts || attempt === 0) setIsLoading(false); // Only set loading to false on final failure or first success
                     }
-                } catch (err) {
-                     setChatHistory(prev => [...prev, { role: 'ai', text: 'Sorry, the AI assistant is currently offline for maintenance. Please check back later.' }]);
-                } finally {
-                    setIsLoading(false);
                 }
+                 setIsLoading(false);
             };
 
             const sendMessage = (prompt) => {
@@ -414,7 +469,7 @@
             return (
                 <Modal onClose={onClose} animationClasses={{enterActive: 'opacity-100 scale-100', exitActive: 'opacity-0 scale-95'}}>
                     {(handleClose) => (
-                        <div className="bg-background-light rounded-lg shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col">
+                        <div className="bg-background-light rounded-lg shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col border border-klar/50">
                             <div className="p-4 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
                                 <h3 className="text-lg font-bold text-white">AI Script Helper</h3>
                                 <button onClick={handleClose} className="text-gray-400 hover:text-white text-2xl">&times;</button>
@@ -496,8 +551,8 @@
             const handleScrollTo = (id) => {
                  const element = document.getElementById(id);
                  if (element) {
-                    const offsetPosition = element.getBoundingClientRect().top + window.pageYOffset - headerHeight;
-                    window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+                     const offsetPosition = element.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+                     window.scrollTo({ top: offsetPosition, behavior: "smooth" });
                  }
                  setIsMobileMenuOpen(false);
             };
@@ -535,17 +590,19 @@
                             headerRef={headerRef}
                             onScrollTo={handleScrollTo} 
                             onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            isMobileMenuOpen={isMobileMenuOpen}
                             activeSection={activeSection}
                         />
                          <MobileMenu 
                             isOpen={isMobileMenuOpen}
                             onScrollTo={handleScrollTo}
+                            onClose={() => setIsMobileMenuOpen(false)}
                         />
                         <main>
-                            <section id="home" className="min-h-screen flex flex-col items-center justify-center text-center p-8 -mt-20">
+                            <section id="home" className="min-h-screen flex flex-col items-center justify-center text-center p-8 pt-20">
                                 <div className="relative z-10">
-                                    <h2 className="text-6xl font-extrabold text-white">Welcome to <span className="text-klar">Klar Hub</span></h2>
-                                    <p className="text-xl text-gray-400 mt-4 max-w-2xl">The pinnacle of script performance and reliability for FF2.</p>
+                                    <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white">Welcome to <span className="text-klar">Klar Hub</span></h2>
+                                    <p className="text-lg md:text-xl text-gray-400 mt-4 max-w-2xl mx-auto">The pinnacle of script performance and reliability for FF2.</p>
                                     
                                     <div className="mt-6 flex flex-col md:flex-row items-center justify-center gap-6 text-gray-400">
                                         <div className="flex items-center gap-2">
@@ -598,10 +655,10 @@
                                     <div className="mt-12 grid md:grid-cols-3 gap-8">
                                         {features.map(f => (
                                              <div key={f.title} className="bg-black/30 p-6 rounded-lg border border-gray-800 text-left interactive-card">
-                                                <svg className="w-8 h-8 text-klar mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d={f.icon} /></svg>
-                                                <h4 className="text-xl font-semibold text-white">{f.title}</h4>
-                                                <p className="text-gray-400 mt-2">{f.description}</p>
-                                            </div>
+                                                 <svg className="w-8 h-8 text-klar mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d={f.icon} /></svg>
+                                                 <h4 className="text-xl font-semibold text-white">{f.title}</h4>
+                                                 <p className="text-gray-400 mt-2">{f.description}</p>
+                                             </div>
                                         ))}
                                     </div>
                                 </section>
@@ -660,9 +717,10 @@
                                 <section id="tos" className="py-12 max-w-4xl mx-auto fade-in-section">
                                     <h3 className="text-4xl font-bold text-white text-center">Terms & Conditions</h3>
                                     <div className="mt-12 bg-black/30 border border-gray-800 rounded-lg p-8 space-y-6 text-gray-300">
-                                        <p><strong className="text-white">Buyer Rule 1:</strong> Klar Hub does not accept refunds if you purchase a script.</p>
-                                        <p><strong className="text-white">Buyer Rule 2:</strong> Script sharing is not prohibited in Klar. However, if you are caught doing so, you will be blacklisted from using your script. (No refunds will be issued in this case.)</p>
-                                        <p><strong className="text-white">Buyer Rule 3:</strong> Attempting to crack into our source or any other protected material will result in a lawsuit being sent to you. At Klar, we take our source very seriously. (This rule is also a regulatory rule.)</p>
+                                        <p><strong className="text-white">Refund Policy:</strong> All sales are final. Due to the digital nature of our products, we do not offer refunds once a purchase is completed. Please review all features and compatibility information before buying.</p>
+                                        <p><strong className="text-white">License Agreement:</strong> Your license is for personal use only. Account or script sharing is strictly prohibited. Violation of this rule may result in a permanent suspension of your access without a refund.</p>
+                                        <p><strong className="text-white">Software Use:</strong> Any attempt to reverse-engineer, decompile, or crack our software is a violation of these terms and applicable laws. We reserve the right to pursue appropriate action and terminate access for such activities.</p>
+                                        <p><strong className="text-white">Disclaimer:</strong> Our software is provided 'as-is'. While we strive for 100% uptime and safety, we are not liable for any account actions or issues that may arise from its use. Use at your own discretion.</p>
                                     </div>
                                 </section>
 
@@ -687,7 +745,7 @@
             );
         };
 
-        const Header = ({ headerRef, onScrollTo, onToggleMobileMenu, activeSection }) => {
+        const Header = ({ headerRef, onScrollTo, onToggleMobileMenu, activeSection, isMobileMenuOpen }) => {
             const discordLink = "https://discord.gg/bGmGSnW3gQ";
             const navItems = [
                 { id: 'features', label: 'Features' },
@@ -712,13 +770,18 @@
                          <a href={discordLink} target="_blank" rel="noopener noreferrer" className="inline-block py-2 px-6 rounded-lg font-semibold text-center transition bg-klar/20 hover:bg-klar/30 text-klar border border-klar">Join Discord</a>
                     </div>
                     <div className="md:hidden flex-1 flex justify-end">
-                        <button onClick={onToggleMobileMenu} className="text-white"><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" /></svg></button>
+                        <button onClick={onToggleMobileMenu} className="text-white z-50">
+                            {isMobileMenuOpen ? 
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg> :
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" /></svg>
+                            }
+                        </button>
                     </div>
                 </header>
             );
         };
         
-        const MobileMenu = ({ isOpen, onScrollTo }) => {
+        const MobileMenu = ({ isOpen, onScrollTo, onClose }) => {
             if (!isOpen) return null;
             const discordLink = "https://discord.gg/bGmGSnW3gQ";
             const navItems = [
@@ -729,12 +792,11 @@
                 { id: 'tos', label: 'Terms' }
             ];
             return (
-                <div className="fixed inset-0 z-50 bg-background-dark/95 backdrop-blur-lg flex flex-col items-center justify-center gap-8 text-2xl font-bold">
-                     <button onClick={() => onScrollTo(null)} className="absolute top-5 right-5 text-white text-4xl">&times;</button>
-                     {navItems.map(item => (
-                         <button key={item.id} onClick={() => onScrollTo(item.id)} className="text-gray-300 hover:text-klar transition">{item.label}</button>
-                     ))}
-                     <div className="mt-4"><a href={discordLink} target="_blank" rel="noopener noreferrer" className="inline-block py-3 px-8 text-xl rounded-lg font-semibold text-center transition bg-klar hover:bg-klar-light text-white">Join Discord</a></div>
+                <div className="fixed top-0 left-0 w-full h-full z-30 bg-background-dark/95 backdrop-blur-lg flex flex-col items-center justify-center gap-8 text-2xl font-bold md:hidden">
+                       {navItems.map(item => (
+                           <button key={item.id} onClick={() => onScrollTo(item.id)} className="text-gray-300 hover:text-klar transition">{item.label}</button>
+                       ))}
+                       <div className="mt-4"><a href={discordLink} target="_blank" rel="noopener noreferrer" className="inline-block py-3 px-8 text-xl rounded-lg font-semibold text-center transition bg-klar hover:bg-klar-light text-white">Join Discord</a></div>
                 </div>
             );
         };
@@ -766,12 +828,12 @@
 
             return (
                 <div id="ai-helper-button-wrapper" className="fixed bottom-8 right-8 z-40">
-                     {showTooltip && (
-                         <div className="initial-tooltip absolute bottom-full mb-3 right-0 w-max bg-gray-800 text-white text-sm rounded-md px-3 py-1.5 pointer-events-none">
-                            Have questions? Ask our AI!
-                            <div className="absolute right-4 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-gray-800"></div>
-                        </div>
-                    )}
+                       {showTooltip && (
+                           <div className="initial-tooltip absolute bottom-full mb-3 right-0 w-max bg-gray-800 text-white text-sm rounded-md px-3 py-1.5 pointer-events-none">
+                               Have questions? Ask our AI!
+                               <div className="absolute right-4 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-gray-800"></div>
+                           </div>
+                       )}
                     <button id="ai-helper-button" onClick={onClick} className="bg-klar/80 hover:bg-klar text-white w-12 h-12 rounded-full flex items-center justify-center pointer-events-auto shadow-lg shadow-klar">
                         <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 21v-1.5M15.75 3v1.5m0 16.5v-1.5m3.75-12H21M12 21v-1.5" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 3.75v16.5M16.5 4.5l-9 15M16.5 19.5l-9-15" /></svg>
                     </button>
