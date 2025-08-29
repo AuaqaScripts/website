@@ -48,10 +48,18 @@
             scroll-behavior: smooth;
         }
 
+        @keyframes animated-gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--background-dark);
             color: var(--text-primary);
+            background: linear-gradient(-45deg, var(--background-dark), var(--background-light), var(--klar-darker), var(--background-dark));
+            background-size: 400% 400%;
+            animation: animated-gradient 20s ease infinite;
         }
 
         .bg-klar { background-color: var(--klar-primary); }
@@ -108,28 +116,6 @@
         
         #back-to-top {
             transition: opacity 0.3s, transform 0.3s;
-        }
-        
-        /* Aurora Background Styles */
-        .aurora-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            overflow: hidden;
-        }
-        .aurora-spot {
-            position: absolute;
-            width: 800px;
-            height: 800px;
-            background-image: radial-gradient(circle, rgba(85, 134, 214, 0.1) 0%, transparent 60%);
-            border-radius: 50%;
-            filter: blur(100px);
-            will-change: transform;
-            pointer-events: none;
-            transition: transform 0.5s ease-out;
         }
         
         /* Preloader Styles */
@@ -309,31 +295,6 @@
         };
 
         // --- Components ---
-        const AuroraBackground = () => {
-            const spot1 = useRef(null);
-            const spot2 = useRef(null);
-            const spot3 = useRef(null);
-
-            useEffect(() => {
-                const handleScroll = () => {
-                    const scrollY = window.scrollY;
-                    if (spot1.current) spot1.current.style.transform = `translateY(${scrollY * 0.3}px)`;
-                    if (spot2.current) spot2.current.style.transform = `translateY(${scrollY * 0.5}px)`;
-                    if (spot3.current) spot3.current.style.transform = `translateY(${scrollY * 0.7}px)`;
-                };
-                window.addEventListener('scroll', handleScroll);
-                return () => window.removeEventListener('scroll', handleScroll);
-            }, []);
-            
-            return (
-                <div className="aurora-background">
-                    <div ref={spot1} className="aurora-spot" style={{ top: '-50%', left: '-50%' }}></div>
-                    <div ref={spot2} className="aurora-spot" style={{ top: '0%', right: '-50%' }}></div>
-                    <div ref={spot3} className="aurora-spot" style={{ bottom: '-50%', left: '25%' }}></div>
-                </div>
-            );
-        };
-        
         const Modal = ({ children, onClose, animationClasses }) => {
             const [isAnimating, setIsAnimating] = useState(false);
 
@@ -396,7 +357,7 @@
                 const apiKey = ""; // API key is handled by the environment.
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
-                const systemPrompt = `You are a friendly and helpful AI assistant for Klar Hub, a website that sells scripts for the Roblox game Football Fusion 2. Your goal is to answer user questions about Klar Hub's features, pricing, safety, and community. Be concise and informative. Use markdown for formatting like bolding and lists.
+                const systemPrompt = `You are a friendly and helpful AI assistant representing Klar Hub, a website that sells scripts for the Roblox game Football Fusion 2. You are an expert on all things Klar Hub, including its features, pricing, and safety. While your main purpose is to help users with Klar Hub, feel free to engage in friendly, on-topic conversation. Use markdown for formatting.
 
 **Pricing Information:**
 * 1 Week Access: $1.50
@@ -584,7 +545,6 @@ When asked about pricing, use the information above. Do not invent other prices 
             
             return (
                 <div className="relative">
-                    <AuroraBackground />
                     <div className="relative z-10">
                         <Header 
                             headerRef={headerRef}
