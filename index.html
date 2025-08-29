@@ -52,6 +52,7 @@
             font-family: 'Inter', sans-serif;
             background-color: var(--background-dark);
             color: var(--text-primary);
+            transition: background-color 0.5s ease;
         }
 
         .bg-klar { background-color: var(--klar-primary); }
@@ -110,49 +111,6 @@
             transition: opacity 0.3s, transform 0.3s;
         }
         
-        /* Aurora Background Animation */
-        .aurora-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background: radial-gradient(ellipse at top left, var(--klar-darker) 0%, var(--background-dark) 60%);
-            overflow: hidden;
-        }
-        .aurora-background::before, .aurora-background::after {
-            content: '';
-            position: absolute;
-            width: 800px;
-            height: 800px;
-            background-image: radial-gradient(circle, rgba(85, 134, 214, 0.1) 0%, transparent 60%);
-            border-radius: 50%;
-            filter: blur(100px);
-            will-change: transform;
-            pointer-events: none;
-        }
-        .aurora-background::before {
-            top: -20%;
-            left: -20%;
-            animation: aurora-one 20s infinite alternate ease-in-out;
-        }
-        .aurora-background::after {
-            bottom: -20%;
-            right: -20%;
-            animation: aurora-two 25s infinite alternate ease-in-out;
-        }
-        @keyframes aurora-one {
-            0% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(100px, 50px) scale(1.2); }
-            100% { transform: translate(0, 0) scale(1); }
-        }
-        @keyframes aurora-two {
-            0% { transform: translate(0, 0) scale(1.2); }
-            50% { transform: translate(-100px, -50px) scale(1); }
-            100% { transform: translate(0, 0) scale(1.2); }
-        }
-        
         /* Preloader Styles */
         #preloader {
             position: fixed;
@@ -201,32 +159,18 @@
         }
         
         /* Modal Animation */
-        .modal-enter {
-          opacity: 0;
-        }
         .modal-enter-active {
           opacity: 1;
           transition: opacity 300ms;
-        }
-        .modal-exit {
-          opacity: 1;
         }
         .modal-exit-active {
           opacity: 0;
           transition: opacity 300ms;
         }
-        .modal-content-enter {
-            opacity: 0;
-            transform: scale(0.95);
-        }
         .modal-content-enter-active {
             opacity: 1;
             transform: scale(1);
             transition: opacity 300ms, transform 300ms;
-        }
-        .modal-content-exit {
-            opacity: 1;
-            transform: scale(1);
         }
         .modal-content-exit-active {
             opacity: 0;
@@ -357,11 +301,11 @@
 
             const handleClose = () => {
                 setIsAnimating(false);
-                setTimeout(onClose, 300); // Wait for animation to finish
+                setTimeout(onClose, 300);
             };
             
             return (
-                <div onClick={handleClose} className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 ${isAnimating ? 'opacity-100 modal-enter-active' : 'opacity-0 modal-exit-active'}`}>
+                <div onClick={handleClose} className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 ${isAnimating ? 'opacity-100' : 'opacity-0'}`}>
                      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
                      <div onClick={e => e.stopPropagation()} className={`relative transition-all duration-300 ${isAnimating ? animationClasses.enterActive : animationClasses.exitActive}`}>
                         {children(handleClose)}
@@ -372,7 +316,9 @@
         
         const AIHelperModal = ({ onClose }) => {
             const [input, setInput] = useState('');
-            const [chatHistory, setChatHistory] = useState([]);
+            const [chatHistory, setChatHistory] = useState([
+                { role: 'ai', text: 'Hello! I am the Klar Hub AI assistant. How can I help you today? Feel free to ask about features, pricing, or anything else.' }
+            ]);
             const [isLoading, setIsLoading] = useState(false);
             const chatEndRef = useRef(null);
 
@@ -405,32 +351,32 @@
                 }
             };
 
-            const sendMessage = () => {
-                if (!input.trim() || isLoading) return;
-                setChatHistory(prev => [...prev, { role: 'user', text: input }]);
-                callGeminiAPI(input);
+            const sendMessage = (prompt) => {
+                if (!prompt.trim() || isLoading) return;
+                setChatHistory(prev => [...prev, { role: 'user', text: prompt }]);
+                callGeminiAPI(prompt);
                 setInput('');
             };
             
-            const handleKeyDown = (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                }
+            const handleFormSubmit = (e) => {
+                e.preventDefault();
+                sendMessage(input);
             };
-            
+
+            const quickQuestions = ["What are the features?", "How much is lifetime access?", "Is Klar Hub safe to use?"];
+
             return (
                 <Modal onClose={onClose} animationClasses={{enterActive: 'opacity-100 scale-100', exitActive: 'opacity-0 scale-95'}}>
                     {(handleClose) => (
-                        <div className="bg-background-light rounded-lg shadow-2xl w-full max-w-lg h-[70vh] flex flex-col">
-                            <div className="p-4 border-b border-gray-700 flex justify-between items-center">
+                        <div className="bg-background-light rounded-lg shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col">
+                            <div className="p-4 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
                                 <h3 className="text-lg font-bold text-white">AI Script Helper</h3>
                                 <button onClick={handleClose} className="text-gray-400 hover:text-white text-2xl">&times;</button>
                             </div>
                             <div className="flex-1 p-4 space-y-4 overflow-y-auto">
                                 {chatHistory.map((msg, index) => (
                                     <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`max-w-xs md:max-w-md p-3 rounded-lg ${msg.role === 'user' ? 'bg-klar text-white' : 'bg-gray-700 text-gray-200'}`}>
+                                        <div className={`max-w-md p-3 rounded-lg ${msg.role === 'user' ? 'bg-klar text-white' : 'bg-gray-700 text-gray-200'}`}>
                                             <p dangerouslySetInnerHTML={{ __html: msg.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\* (.*?)(?:\n|$)/g, '<li>$1</li>').replace(/<li>/g, '<li class="list-disc ml-4">') }}></p>
                                         </div>
                                     </div>
@@ -446,19 +392,28 @@
                                 )}
                                 <div ref={chatEndRef} />
                             </div>
-                            <div className="p-4 border-t border-gray-700 flex gap-2">
+                             {chatHistory.length === 1 && (
+                                <div className="p-4 border-t border-gray-700 flex-shrink-0">
+                                    <p className="text-sm text-gray-400 mb-2 text-center">Or try one of these:</p>
+                                    <div className="flex flex-wrap justify-center gap-2">
+                                        {quickQuestions.map(q => (
+                                            <button key={q} onClick={() => sendMessage(q)} className="bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm px-3 py-1 rounded-full transition">{q}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            <form onSubmit={handleFormSubmit} className="p-4 border-t border-gray-700 flex gap-2 flex-shrink-0">
                                 <input
                                     type="text"
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
-                                    onKeyDown={handleKeyDown}
                                     placeholder="Ask a question..."
                                     className="w-full bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-klar p-3"
                                 />
-                                <button type="button" onClick={sendMessage} className="bg-klar hover:bg-klar-light text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center" disabled={isLoading}>
-                                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M3.105 2.289a.75.75 0 00-.826.95l1.414 4.925A1.5 1.5 0 005.135 9.25h6.115a.75.75 0 010 1.5H5.135a1.5 1.5 0 00-1.442 1.086L2.279 16.76a.75.75 0 00.95.826l1.425-3.562a.75.75 0 000-1.406L3.105 2.289z" /></svg>
+                                <button type="submit" className="bg-klar hover:bg-klar-light text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center" disabled={isLoading}>
+                                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M3.105 2.289a.75.75 0 00-.826.95l1.414 4.925A1.5 1.5 0 005.135 9.25h6.115a.75.75 0 010 1.5H5.135a1.5 1.5 0 00-1.442 1.086L2.279 16.76a.75.75 0 00.95.826l14.25-3.562a.75.75 0 000-1.406L3.105 2.289z" /></svg>
                                 </button>
-                            </div>
+                            </form>
                         </div>
                     )}
                 </Modal>
@@ -487,6 +442,22 @@
             useEffect(() => {
                 if(headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
             }, []);
+
+            useEffect(() => {
+                const body = document.body;
+                const handleScroll = () => {
+                    const scrollY = window.scrollY;
+                    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+                    const scrollPercent = Math.min(scrollY / (docHeight * 0.75), 1);
+                    const r = Math.floor(18 + (44 - 18) * scrollPercent);
+                    const g = Math.floor(18 + (74 - 18) * scrollPercent);
+                    const b = Math.floor(18 + (138 - 18) * scrollPercent);
+                    body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+                };
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+
 
             const [usersRef, usersCount] = useAnimatedCounter(80);
             const [updatesRef, updatesCount] = useAnimatedCounter(20);
@@ -527,7 +498,7 @@
             ];
             
             return (
-                <div>
+                <div className="relative">
                     <div className="aurora-background"></div>
                     <div className="relative z-10">
                         <Header 
@@ -541,7 +512,7 @@
                             onScrollTo={handleScrollTo}
                         />
                         <main>
-                            <section id="home" className="min-h-screen flex flex-col items-center justify-center text-center p-8 relative -mt-20">
+                            <section id="home" className="min-h-screen flex flex-col items-center justify-center text-center p-8 -mt-20">
                                 <div className="relative z-10">
                                     <h2 className="text-6xl font-extrabold text-white">Welcome to <span className="text-klar">Klar Hub</span></h2>
                                     <p className="text-xl text-gray-400 mt-4 max-w-2xl">The pinnacle of script performance and reliability for FF2.</p>
