@@ -4,21 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
+    <!-- SEO and Link Preview Meta Tags -->
     <title>Klar Hub | FF2 Script</title>
     <meta name="description" content="The pinnacle of script performance and reliability for Football Fusion 2. Featuring Perfect Kicking, QB Aimbot, and Ball Magnets.">
     
+    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://klarhub.store/">
     <meta property="og:title" content="Klar Hub | The Ultimate FF2 Script Hub">
     <meta property="og:description" content="The pinnacle of script performance and reliability for Football Fusion 2. Featuring Perfect Kicking, QB Aimbot, and Ball Magnets.">
     <meta property="og:image" content="https://placehold.co/1200x630/121212/5586D6?text=Klar%20Hub&font=inter">
-
+    
+    <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://klarhub.store/">
     <meta property="twitter:title" content="Klar Hub | The Ultimate FF2 Script Hub">
     <meta property="twitter:description" content="The pinnacle of script performance and reliability for Football Fusion 2. Featuring Perfect Kicking, QB Aimbot, and Ball Magnets.">
     <meta property="twitter:image" content="https://placehold.co/1200x630/121212/5586D6?text=Klar%20Hub&font=inter">
-
+    
+    <!-- Theme Color for Discord Embed -->
     <meta name="theme-color" content="#5586D6">
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -27,6 +31,10 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
         
@@ -40,30 +48,23 @@
             --text-secondary: #A0A0A0;
         }
 
-        html {
-            scroll-behavior: smooth;
-        }
-
+        html { scroll-behavior: smooth; }
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--background-dark);
             color: var(--text-primary);
         }
-
         .bg-klar { background-color: var(--klar-primary); }
         .hover\:bg-klar-light:hover { background-color: var(--klar-light); }
         .text-klar { color: var(--klar-primary); }
         .border-klar { border-color: var(--klar-primary); }
         .shadow-klar { box-shadow: 0 4px 14px 0 rgba(85, 134, 214, 0.3); }
-
         .interactive-card {
             position: relative;
             transition: transform 0.2s ease, box-shadow 0.3s ease;
             transform-style: preserve-3d;
         }
-        .interactive-card:hover {
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
+        .interactive-card:hover { box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         .interactive-card::before {
             content: '';
             position: absolute;
@@ -75,18 +76,12 @@
             transition: opacity 0.3s;
             pointer-events: none;
         }
-        .interactive-card:hover::before {
-            opacity: 1;
-        }
-
-        .faq-item {
-            transition: transform 0.3s ease, border-color 0.3s ease;
-        }
+        .interactive-card:hover::before { opacity: 1; }
+        .faq-item { transition: transform 0.3s ease, border-color 0.3s ease; }
         .faq-item:hover {
             transform: scale(1.02);
             border-color: var(--klar-primary);
         }
-
         .fade-in-section {
             opacity: 0;
             transform: translateY(20px);
@@ -96,39 +91,26 @@
             opacity: 1;
             transform: translateY(0);
         }
-        
         .nav-active {
             color: var(--klar-primary) !important;
             font-weight: 700;
         }
-        
-        #back-to-top {
-            transition: opacity 0.3s, transform 0.3s;
-        }
-        
-        /* Aurora Background Styles */
+        #back-to-top { transition: opacity 0.3s, transform 0.3s; }
         .aurora-background {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
             overflow: hidden;
         }
         .aurora-spot {
             position: absolute;
-            width: 800px;
-            height: 800px;
-            background-image: radial-gradient(circle, rgba(85, 134, 214, 0.1) 0%, transparent 60%);
+            background-image: radial-gradient(circle, rgba(85, 134, 214, 0.15) 0%, transparent 60%);
             border-radius: 50%;
             filter: blur(100px);
             will-change: transform;
             pointer-events: none;
             transition: transform 0.5s ease-out;
         }
-        
-        /* Preloader Styles */
         #preloader {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -151,19 +133,13 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        /* AI Button and Tooltip animation */
+        @keyframes spin { to { transform: rotate(360deg); } }
         #ai-helper-button-wrapper {
             animation: button-pop-in 1s 1s forwards cubic-bezier(0.16, 1, 0.3, 1);
             opacity: 0;
             transform: scale(0.5);
         }
-        @keyframes button-pop-in {
-            to { opacity: 1; transform: scale(1); }
-        }
+        @keyframes button-pop-in { to { opacity: 1; transform: scale(1); } }
         .initial-tooltip {
             animation: tooltip-fade 7s 1.5s forwards ease-in-out;
             opacity: 0;
@@ -174,38 +150,47 @@
             80% { opacity: 1; transform: translateY(-0.5rem); }
             100% { opacity: 0; transform: translateY(0); }
         }
-        
-        /* Modal Animation */
-        .modal-enter-active {
-          opacity: 1;
-          transition: opacity 300ms;
-        }
-        .modal-exit-active {
-          opacity: 0;
-          transition: opacity 300ms;
-        }
+        .modal-enter-active { opacity: 1; transition: opacity 300ms; }
+        .modal-exit-active { opacity: 0; transition: opacity 300ms; }
         .modal-content-enter-active {
-            opacity: 1;
-            transform: scale(1);
+            opacity: 1; transform: scale(1);
             transition: opacity 300ms, transform 300ms;
         }
         .modal-content-exit-active {
-            opacity: 0;
-            transform: scale(0.95);
+            opacity: 0; transform: scale(0.95);
             transition: opacity 300ms, transform 300ms;
         }
-
     </style>
 </head>
 <body class="antialiased">
-    <div id="preloader">
-        <div class="spinner"></div>
-    </div>
+    <div id="preloader"><div class="spinner"></div></div>
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
+        // --- Firebase Setup ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAfVDsQwDLpJhbfGA6wlgf69gKX7XHctDQ",
+            authDomain: "website-c3b3e.firebaseapp.com",
+            projectId: "website-c3b3e",
+            storageBucket: "website-c3b3e.appspot.com",
+            messagingSenderId: "166359650371",
+            appId: "1:166359650371:web:4e775a641c6b7ce304f6",
+            measurementId: "G-XSX0VCJY8Y"
+        };
+
+        let db, auth;
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            db = firebase.firestore();
+            auth = firebase.auth();
+        } catch(e) {
+            console.error("Firebase initialization error.", e);
+        }
+        
         // --- Helper Hooks ---
         const useInteractiveCard = () => {
             useEffect(() => {
@@ -215,8 +200,8 @@
                     const rect = card.getBoundingClientRect();
                     const x = e.clientX - rect.left;
                     const y = e.clientY - rect.top;
-                    const rotateX = (y - rect.height / 2) / 8; // More pronounced tilt
-                    const rotateY = (rect.width / 2 - x) / 8; // More pronounced tilt
+                    const rotateX = (y - rect.height / 2) / 8;
+                    const rotateY = (rect.width / 2 - x) / 8;
                     card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
                     card.style.setProperty('--mouse-x', `${x}px`);
                     card.style.setProperty('--mouse-y', `${y}px`);
@@ -253,14 +238,12 @@
         const useAnimatedCounter = (target, duration = 2000) => {
             const [count, setCount] = useState(0);
             const ref = useRef(null);
-
             useEffect(() => {
                 const observer = new IntersectionObserver(([entry]) => {
                     if (entry.isIntersecting) {
                         let start = 0;
                         const end = target;
                         const startTime = Date.now();
-                        
                         const animate = () => {
                             const currentTime = Date.now();
                             const progress = Math.min((currentTime - startTime) / duration, 1);
@@ -272,13 +255,9 @@
                         observer.unobserve(ref.current);
                     }
                 }, { threshold: 0.5 });
-
                 if (ref.current) observer.observe(ref.current);
-                return () => {
-                    if (observer && ref.current) observer.unobserve(ref.current);
-                }
+                return () => { if (observer && ref.current) observer.unobserve(ref.current); }
             }, [target, duration]);
-
             return [ref, count];
         };
         
@@ -288,15 +267,10 @@
                 const sections = Array.from(document.querySelectorAll('main section[id]'));
                 const handleScroll = () => {
                     const scrollPosition = window.scrollY + window.innerHeight / 3; 
-                    
                     const currentSection = sections
-                        .map(section => ({
-                            id: section.id,
-                            offsetTop: section.offsetTop
-                        }))
+                        .map(section => ({ id: section.id, offsetTop: section.offsetTop }))
                         .filter(section => section.offsetTop <= scrollPosition)
                         .pop();
-
                     setActiveSection(currentSection ? currentSection.id : 'home');
                 };
                 window.addEventListener('scroll', handleScroll);
@@ -305,7 +279,6 @@
             return activeSection;
         };
 
-        // --- Components ---
         const AuroraBackground = () => {
             const [spots] = useState(() =>
                 Array.from({ length: 15 }).map(() => ({
@@ -315,8 +288,7 @@
                     parallaxFactor: Math.random() * 0.5 + 0.2,
                 }))
             );
-            const spotRefs = useRef([]);
-            spotRefs.current = spots.map((_, i) => spotRefs.current[i] ?? React.createRef());
+            const spotRefs = useRef(spots.map(() => React.createRef()));
 
             useEffect(() => {
                 const handleScroll = () => {
@@ -338,12 +310,7 @@
                             key={i}
                             ref={spotRefs.current[i]}
                             className="aurora-spot"
-                            style={{
-                                top: spot.top,
-                                left: spot.left,
-                                width: spot.size,
-                                height: spot.size,
-                            }}
+                            style={{ top: spot.top, left: spot.left, width: spot.size, height: spot.size }}
                         />
                     ))}
                 </div>
@@ -352,7 +319,6 @@
         
         const Modal = ({ children, onClose, animationClasses }) => {
             const [isAnimating, setIsAnimating] = useState(false);
-
             useEffect(() => {
                 setIsAnimating(true);
                 const handleEsc = e => e.key === 'Escape' && handleClose();
@@ -382,14 +348,10 @@
                 let videoId = null;
                 try {
                     const urlObj = new URL(url);
-                    if (urlObj.hostname === 'youtu.be') {
-                        videoId = urlObj.pathname.slice(1);
-                    } else if (urlObj.hostname.includes('youtube.com')) {
-                        if (urlObj.pathname === '/watch') {
-                            videoId = urlObj.searchParams.get('v');
-                        } else if (urlObj.pathname.startsWith('/embed/')) {
-                            videoId = urlObj.pathname.split('/embed/')[1].split('?')[0];
-                        }
+                    if (urlObj.hostname === 'youtu.be') videoId = urlObj.pathname.slice(1);
+                    else if (urlObj.hostname.includes('youtube.com')) {
+                        if (urlObj.pathname === '/watch') videoId = urlObj.searchParams.get('v');
+                        else if (urlObj.pathname.startsWith('/embed/')) videoId = urlObj.pathname.split('/embed/')[1].split('?')[0];
                     }
                 } catch (error) { console.error("Invalid URL:", url, error); }
                 return videoId;
@@ -403,60 +365,36 @@
                     {(handleClose) => (
                         <div className="w-[95vw] h-[80vh] relative group flex items-center justify-center">
                             <button onClick={handleClose} className="absolute top-0 right-0 z-50 bg-white text-black rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg transform translate-x-1/2 -translate-y-1/2">&times;</button>
-                            
                             {videoUrls.map((url, index) => {
                                 const isActive = index === currentIndex;
                                 const videoId = getYoutubeVideoId(url);
                                 const thumbnailUrl = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '';
-
                                 let offset = index - currentIndex;
                                 const numItems = videoUrls.length;
-                                if (Math.abs(offset) > numItems / 2) {
-                                    offset = offset > 0 ? offset - numItems : offset + numItems;
-                                }
-                                
+                                if (Math.abs(offset) > numItems / 2) offset = offset > 0 ? offset - numItems : offset + numItems;
                                 if (Math.abs(offset) > 1) return null;
 
                                 const style = {
                                     transform: `translateX(${offset * 75}%) scale(${isActive ? 1 : 0.6})`,
                                     opacity: isActive ? 1 : 0.5,
                                     zIndex: numItems - Math.abs(offset),
-                                    pointerEvents: isActive ? 'auto' : 'all',
+                                    pointerEvents: 'all',
                                 };
 
                                 return (
-                                    <div 
-                                        key={index} 
-                                        className="absolute w-[65%] aspect-video transition-all duration-500 ease-in-out" 
-                                        style={style}
-                                        onClick={() => !isActive && setCurrentIndex(index)}
-                                    >
+                                    <div key={index} className="absolute w-[65%] aspect-video transition-all duration-500 ease-in-out" style={style} onClick={() => !isActive && setCurrentIndex(index)}>
                                         {isActive ? (
-                                            <iframe 
-                                                className="w-full h-full rounded-lg shadow-2xl border-2 border-klar"
-                                                src={url}
-                                                title={`Klar Hub Demo Video ${index + 1}`}
-                                                frameBorder="0"
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                allowFullScreen
-                                            ></iframe>
+                                            <iframe className="w-full h-full rounded-lg shadow-2xl border-2 border-klar" src={url} title={`Klar Hub Demo Video ${index + 1}`} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
                                         ) : (
-                                            <div className="w-full h-full cursor-pointer">
-                                                <img src={thumbnailUrl} className="w-full h-full object-cover rounded-lg" alt={`Video thumbnail ${index + 1}`} />
-                                            </div>
+                                            <div className="w-full h-full cursor-pointer"><img src={thumbnailUrl} className="w-full h-full object-cover rounded-lg" alt={`Video thumbnail ${index + 1}`} /></div>
                                         )}
                                     </div>
                                 );
                             })}
-
                             {videoUrls.length > 1 && (
                                 <>
-                                    <button onClick={handlePrev} className="absolute top-1/2 left-4 -translate-y-1/2 bg-black/40 text-white rounded-full w-12 h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-40">
-                                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
-                                    </button>
-                                    <button onClick={handleNext} className="absolute top-1/2 right-4 -translate-y-1/2 bg-black/40 text-white rounded-full w-12 h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-40">
-                                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
-                                    </button>
+                                    <button onClick={handlePrev} className="absolute top-1/2 left-4 -translate-y-1/2 bg-black/40 text-white rounded-full w-12 h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-40"><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg></button>
+                                    <button onClick={handleNext} className="absolute top-1/2 right-4 -translate-y-1/2 bg-black/40 text-white rounded-full w-12 h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-40"><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg></button>
                                 </>
                             )}
                         </div>
@@ -566,18 +504,123 @@
                 </Modal>
             );
         };
+        
+        const CommunityChatModal = ({ onClose, user }) => {
+            const [messages, setMessages] = useState([]);
+            const [newMessage, setNewMessage] = useState('');
+            const [isLoading, setIsLoading] = useState(true);
+            const chatEndRef = useRef(null);
+
+            useEffect(() => {
+                if(!db) {
+                    console.log("Firestore not available");
+                    setIsLoading(false);
+                    return;
+                }
+                const unsubscribe = db.collection('messages')
+                                      .orderBy('timestamp', 'asc')
+                                      .limit(50)
+                                      .onSnapshot(snapshot => {
+                                          const fetchedMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                                          setMessages(fetchedMessages);
+                                          setIsLoading(false);
+                                      }, error => {
+                                          console.error("Firestore listener error:", error);
+                                          setIsLoading(false);
+                                      });
+                return () => unsubscribe();
+            }, []);
+
+            useEffect(() => {
+                chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, [messages]);
+            
+            const handleSendMessage = async (e) => {
+                e.preventDefault();
+                if (!newMessage.trim() || !user || !db) return;
+                
+                const displayName = localStorage.getItem(`klarHubDisplayName_${user.uid}`) || user.displayName;
+
+                await db.collection('messages').add({
+                    text: newMessage,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    uid: user.uid,
+                    displayName: displayName
+                });
+
+                setNewMessage('');
+            };
+            
+            return (
+                <Modal onClose={onClose} animationClasses={{enterActive: 'opacity-100 scale-100', exitActive: 'opacity-0 scale-95'}}>
+                     {(handleClose) => (
+                        <div className="bg-background-light rounded-lg shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col border border-klar/50">
+                            <div className="p-4 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
+                                <h3 className="text-lg font-bold text-white">Community Chat</h3>
+                                <button onClick={handleClose} className="text-gray-400 hover:text-white text-2xl">&times;</button>
+                            </div>
+                            <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+                                {isLoading ? (
+                                    <div className="flex justify-center items-center h-full"><div className="spinner"></div></div>
+                                ) : messages.map(msg => (
+                                    <div key={msg.id} className={`flex ${msg.uid === user.uid ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`flex flex-col ${msg.uid === user.uid ? 'items-end' : 'items-start'}`}>
+                                            <span className="text-xs text-gray-400 px-1">{msg.displayName}</span>
+                                            <div className={`max-w-md p-3 rounded-lg ${msg.uid === user.uid ? 'bg-klar text-white' : 'bg-gray-700 text-gray-200'}`}>
+                                                <p>{msg.text}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                <div ref={chatEndRef} />
+                            </div>
+                            <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-700 flex gap-2 flex-shrink-0">
+                                <input
+                                    type="text"
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    placeholder="Type your message..."
+                                    className="w-full bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-klar p-3"
+                                />
+                                <button type="submit" className="bg-klar hover:bg-klar-light text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
+                                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M3.105 2.289a.75.75 0 00-.826.95l1.414 4.925A1.5 1.5 0 005.135 9.25h6.115a.75.75 0 010 1.5H5.135a1.5 1.5 0 00-1.442 1.086L2.279 16.76a.75.75 0 00.95.826l14.25-3.562a.75.75 0 000-1.406L3.105 2.289z" /></svg>
+                                </button>
+                            </form>
+                        </div>
+                     )}
+                </Modal>
+            );
+        };
+        
 
         const App = () => {
             const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
             const [isAiHelperOpen, setIsAiHelperOpen] = useState(false);
+            const [isChatOpen, setIsChatOpen] = useState(false);
             const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
             const [activeFaq, setActiveFaq] = useState(null);
             const [scriptCopied, setScriptCopied] = useState(false);
+            const [user, setUser] = useState(null);
 
             useEffect(() => {
                 window.scrollTo(0, 0);
                 const preloader = document.getElementById('preloader');
                 setTimeout(() => preloader.classList.add('loaded'), 1000);
+
+                if(auth) {
+                    auth.onAuthStateChanged(currentUser => {
+                        if (currentUser) {
+                            let displayName = localStorage.getItem(`klarHubDisplayName_${currentUser.uid}`);
+                            if (!displayName) {
+                                displayName = `Player-${Math.floor(Math.random() * 10000)}`;
+                                localStorage.setItem(`klarHubDisplayName_${currentUser.uid}`, displayName);
+                            }
+                            setUser({...currentUser, displayName});
+                        } else {
+                            auth.signInAnonymously().catch(error => console.error("Anonymous sign-in error", error));
+                        }
+                    });
+                }
             }, []);
             useFadeInSection();
             useInteractiveCard();
@@ -599,18 +642,12 @@
 
             const handleCopyScript = () => {
                 const scriptText = `script_key="insert key";\nloadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/50da22b3657a22c353b0dde631cb1dcf.lua"))()`;
-                const textArea = document.createElement("textarea");
-                textArea.value = scriptText;
-                document.body.appendChild(textArea);
-                textArea.select();
-                try {
-                    document.execCommand('copy');
+                navigator.clipboard.writeText(scriptText).then(() => {
                     setScriptCopied(true);
                     setTimeout(() => setScriptCopied(false), 2000);
-                } catch (err) {
+                }).catch(err => {
                     console.error('Failed to copy script: ', err);
-                }
-                document.body.removeChild(textArea);
+                });
             };
             
             const demoVideos = [
@@ -643,6 +680,12 @@
                 { title: "QB Aimbot", description: "Never miss a throw with our precise quarterback aimbot, featuring prediction and sensitivity controls.", icon: "M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" },
                 { title: "Ball Magnets", description: "Automatically catch passes with our intelligent ball magnet, ensuring you never drop the ball.", icon: "M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zm-7.518-.267A8.25 8.25 0 1120.25 10.5M8.288 14.212A5.25 5.25 0 1117.25 10.5" }
             ];
+            const supportedGames = [
+                { name: "Football Fusion 2", abbr: "FF2" },
+                { name: "Ultimate Football", abbr: "UF" },
+                { name: "Murders VS Sheriffs Duels", abbr: "MVSD" },
+                { name: "Arsenal", abbr: "Arsenal" }
+            ];
             
             return (
                 <div className="relative">
@@ -663,7 +706,7 @@
                         <main>
                             <section id="home" className="min-h-screen flex flex-col items-center justify-center text-center p-8 pt-20">
                                 <div className="relative z-10">
-                                    <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white">Welcome to <span className="text-klar">Klar Hub</span></h2>
+                                    <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white">Welcome to <span className="text-klar">Klar</span> Hub</h2>
                                     <p className="text-lg md:text-xl text-gray-400 mt-4 max-w-2xl mx-auto">The pinnacle of script performance and reliability for FF2.</p>
                                     <div className="mt-6 flex flex-col md:flex-row items-center justify-center gap-6 text-gray-400">
                                         <div className="flex items-center gap-2">
@@ -721,6 +764,18 @@
                                             </div>
                                         ))}
                                     </div>
+                                </section>
+                                
+                                <section id="games" className="py-12 text-center fade-in-section">
+                                     <h3 className="text-4xl font-bold text-white">Supported Games</h3>
+                                     <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                                         {supportedGames.map(game => (
+                                            <div key={game.name} className="bg-black/30 p-6 rounded-lg border border-gray-800 text-center interactive-card">
+                                                <h4 className="text-xl font-bold text-white">{game.name}</h4>
+                                                <p className="text-klar font-semibold">{game.abbr}</p>
+                                            </div>
+                                         ))}
+                                     </div>
                                 </section>
 
                                 <section id="pricing" className="py-12 text-center fade-in-section">
@@ -829,6 +884,8 @@
                         {isVideoModalOpen && <VideoModal videoUrls={demoVideos} onClose={() => setIsVideoModalOpen(false)} />}
                         <AIHelperButton onClick={() => setIsAiHelperOpen(true)} />
                         {isAiHelperOpen && <AIHelperModal onClose={() => setIsAiHelperOpen(false)} />}
+                        <CommunityChatButton onClick={() => setIsChatOpen(true)} />
+                        {isChatOpen && <CommunityChatModal user={user} onClose={() => setIsChatOpen(false)} />}
                         <BackToTopButton />
                     </div>
                 </div>
@@ -839,6 +896,7 @@
             const discordLink = "https://discord.gg/bGmGSnW3gQ";
             const navItems = [
                 { id: 'features', label: 'Features' },
+                { id: 'games', label: 'Supported Games' },
                 { id: 'pricing', label: 'Pricing' },
                 { id: 'free', label: 'Free Access' },
                 { id: 'reviews', label: 'Reviews' },
@@ -877,6 +935,7 @@
             const discordLink = "https://discord.gg/bGmGSnW3gQ";
             const navItems = [
                 { id: 'features', label: 'Features' },
+                { id: 'games', label: 'Supported Games' },
                 { id: 'pricing', label: 'Pricing' },
                 { id: 'free', label: 'Free Access' },
                 { id: 'reviews', label: 'Reviews' },
@@ -905,7 +964,7 @@
             }, []);
 
             return (
-                <button id="back-to-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`fixed bottom-8 left-8 bg-klar/80 hover:bg-klar text-white w-12 h-12 rounded-full flex items-center justify-center pointer-events-auto ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+                <button id="back-to-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`fixed bottom-8 right-8 bg-klar/80 hover:bg-klar text-white w-12 h-12 rounded-full flex items-center justify-center pointer-events-auto ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"/></svg>
                 </button>
             );
@@ -919,7 +978,7 @@
             }, []);
 
             return (
-                <div id="ai-helper-button-wrapper" className="fixed bottom-8 right-8 z-40">
+                <div className="action-button-wrapper fixed bottom-8 right-8 z-40">
                      {showTooltip && (
                          <div className="initial-tooltip absolute bottom-full mb-3 right-0 w-max bg-gray-800 text-white text-sm rounded-md px-3 py-1.5 pointer-events-none">
                             Have questions? Ask our AI!
@@ -932,6 +991,14 @@
                 </div>
             );
         };
+        
+        const CommunityChatButton = ({ onClick }) => (
+            <div className="action-button-wrapper fixed bottom-8 left-8 z-40">
+                <button onClick={onClick} className="bg-klar/80 hover:bg-klar text-white w-12 h-12 rounded-full flex items-center justify-center pointer-events-auto shadow-lg shadow-klar">
+                    <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193l-3.72-3.72a1.5 1.5 0 01-4.242 0l-3.72-3.72a1.98 1.98 0 012.193-1.98H12.25c.969 0 1.813.616 2.097 1.5z M4.5 12a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm1.5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm1.5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" /></svg>
+                </button>
+            </div>
+        );
 
         const Footer = () => (
              <footer className="w-full p-8 text-center text-gray-500">
